@@ -22,12 +22,17 @@ describe('AppController (e2e)', () => {
       .expect(200)
       .expect('Content-Type', /json/)
       .expect((res) => {
+        const body = res.body as {
+          success: boolean;
+          data: string;
+          timestamp: string;
+        };
         expect(res.body).toMatchObject({
           success: true,
           data: 'Hello World!',
         });
-        expect(typeof res.body.timestamp).toBe('string');
-        expect(Number.isNaN(Date.parse(res.body.timestamp))).toBe(false);
+        expect(typeof body.timestamp).toBe('string');
+        expect(Number.isNaN(Date.parse(body.timestamp))).toBe(false);
       });
   });
 });
