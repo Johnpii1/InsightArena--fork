@@ -12,6 +12,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { validate } from './config/env.validation';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { MarketsModule } from './markets/markets.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     HealthModule,
     AuthModule,
     UsersModule,
+    MarketsModule,
     CommonModule,
   ],
 
@@ -54,4 +56,4 @@ import { UsersModule } from './users/users.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
