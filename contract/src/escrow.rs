@@ -1,4 +1,4 @@
-﻿use soroban_sdk::{token, Address, Env};
+use soroban_sdk::{token, Address, Env};
 
 use crate::config::{self, PERSISTENT_BUMP, PERSISTENT_THRESHOLD};
 use crate::errors::InsightArenaError;
@@ -110,7 +110,9 @@ pub(crate) fn add_to_treasury_balance(env: &Env, amount: i128) {
         .checked_add(amount)
         .expect("treasury balance overflow");
 
-    env.storage().persistent().set(&DataKey::Treasury, &next_balance);
+    env.storage()
+        .persistent()
+        .set(&DataKey::Treasury, &next_balance);
     bump_treasury(env);
 }
 
