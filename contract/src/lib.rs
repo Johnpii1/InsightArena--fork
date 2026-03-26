@@ -205,6 +205,20 @@ impl InsightArenaContract {
         prediction::claim_payout(&env, predictor, market_id)
     }
 
+    /// Return the current XLM balance held by the contract escrow in stroops.
+    ///
+    /// This is a pure view over the configured token contract and does not
+    /// mutate any internal state.
+    pub fn get_contract_balance(env: Env) -> i128 {
+        escrow::get_contract_balance(&env)
+    }
+
+    /// Audit the contract's escrow solvency against all unclaimed prediction
+    /// stakes currently stored on-chain.
+    pub fn assert_escrow_solvent(env: Env) -> Result<(), InsightArenaError> {
+        escrow::assert_escrow_solvent(&env)
+    }
+
     /// Batch distribute payouts for all unclaimed winning predictions in a
     /// resolved market. Callable only by admin or oracle.
     ///
