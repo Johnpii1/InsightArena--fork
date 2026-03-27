@@ -92,7 +92,7 @@ describe('Auth E2E — challenge → verify flow', () => {
 
     await app.init();
     const httpServer = app.getHttpServer() as Parameters<typeof request>[0];
-    // @ts-ignore
+    // @ts-expect-error supertest type mismatch
     server = request(httpServer);
   });
 
