@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
   UsePipes,
@@ -16,6 +17,9 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Public } from '../common/decorators/public.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
 import { Season } from './entities/season.entity';
 import { SeasonsService } from './seasons.service';
 import { CreateSeasonDto } from './dto/create-season.dto';
@@ -23,9 +27,6 @@ import {
   ListSeasonsDto,
   PaginatedSeasonsResponseDto,
 } from './dto/list-seasons.dto';
-import { Roles } from '../common/decorators/roles.decorator';
-import { Role } from '../common/enums/role.enum';
-import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Seasons')
 @Controller('seasons')
@@ -85,12 +86,30 @@ export class SeasonsController {
   @ApiResponse({ status: 201, description: 'Season created', type: Season })
   @ApiResponse({
     status: 409,
-    description:
-      'Overlapping active season or duplicate season_number',
+    description: 'Overlapping active season or duplicate season_number',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden — admin role required' })
   async create(@Body() dto: CreateSeasonDto): Promise<Season> {
     return this.seasonsService.create(dto);
+  }
+
+  @Post(':id/finalize')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Finalize a season (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Season finalized with top winner set and points reset',
+    type: Season,
+  })
+  @ApiResponse({ status: 404, description: 'Season not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'Season is already finalized',
+  })
+  async finalizeSeason(@Param('id') id: string): Promise<Season> {
+    return this.seasonsService.finalizeSeason(id);
   }
 }

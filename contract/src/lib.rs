@@ -96,6 +96,15 @@ impl InsightArenaContract {
         config::transfer_admin(&env, new_admin)
     }
 
+    /// Update the trusted oracle address. Caller must be the current admin.
+    pub fn update_oracle(
+        env: Env,
+        admin: Address,
+        new_oracle: Address,
+    ) -> Result<(), InsightArenaError> {
+        config::update_oracle(&env, admin, new_oracle)
+    }
+
     // ── Market ────────────────────────────────────────────────────────────────
 
     /// Create a new prediction market. Returns the auto-assigned `market_id`.
@@ -733,6 +742,9 @@ mod leaderboard_tests {
         assert!(matches!(result, Err(Ok(InsightArenaError::Paused))));
     }
 }
+
+#[cfg(test)]
+mod season_tests;
 
 #[cfg(test)]
 mod prediction_tests;

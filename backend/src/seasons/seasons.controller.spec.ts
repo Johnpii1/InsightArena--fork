@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { CreateSeasonDto } from './dto/create-season.dto';
+import { Season } from './entities/season.entity';
 import { SeasonsController } from './seasons.controller';
 import { SeasonsService } from './seasons.service';
-import { Season } from './entities/season.entity';
-import { CreateSeasonDto } from './dto/create-season.dto';
 
 describe('SeasonsController', () => {
   let controller: SeasonsController;
@@ -18,6 +18,7 @@ describe('SeasonsController', () => {
             findAllPaginated: jest.fn(),
             findActive: jest.fn(),
             create: jest.fn(),
+            finalizeSeason: jest.fn(),
           },
         },
       ],
@@ -82,6 +83,18 @@ describe('SeasonsController', () => {
 
       expect(service.create).toHaveBeenCalledWith(dto);
       expect(result).toBe(created);
+    });
+  });
+
+  describe('finalizeSeason', () => {
+    it('delegates to service', async () => {
+      const finalized = { id: 's1', is_finalized: true } as Season;
+      jest.spyOn(service, 'finalizeSeason').mockResolvedValue(finalized);
+
+      const result = await controller.finalizeSeason('season-123');
+
+      expect(service.finalizeSeason).toHaveBeenCalledWith('season-123');
+      expect(result).toBe(finalized);
     });
   });
 });

@@ -1,12 +1,12 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
   Index,
-  ManyToOne,
   JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
@@ -62,7 +62,6 @@ export class Season {
   @Column({ type: 'varchar', length: 128, nullable: true })
   soroban_tx_hash: string | null;
 
-  @ApiProperty()
   @CreateDateColumn()
   created_at: Date;
 
