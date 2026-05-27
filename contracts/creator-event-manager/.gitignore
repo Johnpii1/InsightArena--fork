@@ -13,6 +13,9 @@ Thumbs.db
 # Soroban
 .soroban/
 
+# Test snapshots (generated, can be heavy)
+test_snapshots/
+
 # Build artifacts
 *.wasm
 *.wasm.gz
