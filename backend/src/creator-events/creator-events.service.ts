@@ -65,15 +65,19 @@ export class CreatorEventsService {
     const raw: ContractParticipant[] = await this.contractService.getEventParticipants(eventId);
 
     const withStats: ParticipantWithStats[] = raw.map((p, i) => {
+      const correct =
+        typeof (p as ContractParticipant & { correctPredictions?: number }).correctPredictions === 'number'
+          ? (p as ContractParticipant & { correctPredictions: number }).correctPredictions
+          : 0;
       const accuracy =
         p.predictionCount > 0
-          ? Math.round(((p as any).correctPredictions ?? 0) / p.predictionCount * 100)
+          ? Math.round((correct / p.predictionCount) * 100)
           : 0;
       return {
         address: p.address,
         joinedAt: p.joinedAt,
         totalPredictions: p.predictionCount,
-        correctPredictions: (p as any).correctPredictions ?? 0,
+        correctPredictions: correct,
         accuracyPct: accuracy,
         rank: i + 1,
       };
