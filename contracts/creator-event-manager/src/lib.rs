@@ -1,14 +1,15 @@
 #![no_std]
 
 pub mod admin;
-pub mod storage;
-pub mod storage_types;
-pub mod verification;
-pub mod prediction;
-pub mod r#match;
 mod event;
 mod invite;
+pub mod r#match;
+pub mod prediction;
+pub mod storage;
+pub mod storage_types;
 mod token;
+pub mod verification;
+pub mod views;
 
 use soroban_sdk::{contract, contractimpl, Address, Env, String, Symbol, Vec};
 
@@ -16,6 +17,7 @@ use admin::AdminError;
 use event::EventError;
 use storage_types::{Event, Prediction};
 use verification::VerificationError;
+use views::EventStatistics;
 
 // ---------------------------------------------------------------------------
 // Contract entry point
@@ -291,6 +293,22 @@ impl CreatorEventManagerContract {
         match event::get_event_by_code(&env, invite_code) {
             Ok(e) => e,
             Err(EventError::InvalidInviteCode) => panic!("invalid_invite_code"),
+            Err(EventError::EventNotFound) => panic!("event_not_found"),
+            Err(_) => panic!("unexpected_error"),
+        }
+    }
+
+    /// Return aggregate statistics for an event.
+    ///
+    /// The returned [`EventStatistics`] summarizes participant count, match
+    /// count, prediction volume, match result completion, and verified winner
+    /// count for the requested event.
+    ///
+    /// # Panics
+    /// * `"event_not_found"` — no event exists with the given ID.
+    pub fn get_event_statistics(env: Env, event_id: u64) -> EventStatistics {
+        match views::get_event_statistics(&env, event_id) {
+            Ok(statistics) => statistics,
             Err(EventError::EventNotFound) => panic!("event_not_found"),
             Err(_) => panic!("unexpected_error"),
         }
