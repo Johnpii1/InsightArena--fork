@@ -5,6 +5,7 @@ import {
   Delete,
   Param,
   Query,
+  Body,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
+import { UsersService } from '../users/users.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { Notification } from './entities/notification.entity';
@@ -24,7 +26,10 @@ import { Notification } from './entities/notification.entity';
 @ApiBearerAuth()
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get notifications for authenticated user' })
@@ -63,6 +68,34 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Count of notifications updated' })
   async markAllAsRead(@CurrentUser() user: User): Promise<{ updated: number }> {
     return this.notificationsService.markAllAsRead(user.id);
+  }
+
+  @Patch(':address/read')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark notifications as read by user address' })
+  @ApiResponse({ status: 200, description: 'Count of notifications updated' })
+  async markAsReadByAddress(
+    @Param('address') address: string,
+    @Body() body: { notificationIds?: string[]; markAll?: boolean },
+    @CurrentUser() user: User,
+  ): Promise<{ updated: number }> {
+    const targetUser = await this.usersService.findByAddress(address);
+    if (!targetUser || targetUser.id !== user.id) {
+      return { updated: 0 };
+    }
+
+    if (body.markAll) {
+      return this.notificationsService.markAllAsRead(user.id);
+    }
+
+    if (body.notificationIds && body.notificationIds.length > 0) {
+      return this.notificationsService.markMultipleAsRead(
+        user.id,
+        body.notificationIds,
+      );
+    }
+
+    return { updated: 0 };
   }
 
   @Delete(':id')

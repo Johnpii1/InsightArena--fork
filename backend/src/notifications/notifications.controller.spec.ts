@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
+import { UsersService } from '../users/users.service';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { User } from '../users/entities/user.entity';
 
@@ -34,7 +35,14 @@ describe('NotificationsController', () => {
             findAllForUser: jest.fn(),
             markAsRead: jest.fn(),
             markAllAsRead: jest.fn().mockResolvedValue({ updated: 0 }),
+            markMultipleAsRead: jest.fn().mockResolvedValue({ updated: 0 }),
             remove: jest.fn(),
+          },
+        },
+        {
+          provide: UsersService,
+          useValue: {
+            findByAddress: jest.fn().mockResolvedValue(mockUser),
           },
         },
       ],
