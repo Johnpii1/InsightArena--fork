@@ -118,7 +118,10 @@ describe('NotificationsService', () => {
 
       expect(mockRepository.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { user_address: 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN', read: false },
+          where: {
+            user_address: 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN',
+            read: false,
+          },
         }),
       );
     });
@@ -162,7 +165,10 @@ describe('NotificationsService', () => {
       );
 
       expect(mockRepository.update).toHaveBeenCalledWith(
-        { user_address: 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN', read: false },
+        {
+          user_address: 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN',
+          read: false,
+        },
         { read: true },
       );
       expect(result).toEqual({ updated: 3 });
@@ -177,7 +183,10 @@ describe('NotificationsService', () => {
       await service.remove(1, 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN');
 
       expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 1, user_address: 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN' },
+        where: {
+          id: 1,
+          user_address: 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN',
+        },
       });
       expect(mockRepository.softDelete).toHaveBeenCalledWith(1);
     });

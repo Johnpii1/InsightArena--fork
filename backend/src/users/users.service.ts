@@ -66,7 +66,7 @@ export class UsersService {
     private readonly participantsRepository: Repository<CompetitionParticipant>,
     @InjectRepository(UserBookmark)
     private readonly userBookmarksRepository: Repository<UserBookmark>,
-  ) { }
+  ) {}
 
   async findAll(): Promise<User[]> {
     return this.usersRepository.find();

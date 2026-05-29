@@ -27,9 +27,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 @ApiBearerAuth()
 @Controller('notifications')
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-  ) { }
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get(':address')
   @UseGuards(JwtAuthGuard)
@@ -96,7 +94,10 @@ export class NotificationsController {
     @Param('id') id: string,
     @CurrentUser() user: User,
   ): Promise<void> {
-    return this.notificationsService.markAsRead(Number(id), user.stellar_address);
+    return this.notificationsService.markAsRead(
+      Number(id),
+      user.stellar_address,
+    );
   }
 
   @Patch('read-all')

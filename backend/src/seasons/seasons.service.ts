@@ -30,7 +30,7 @@ export class SeasonsService {
     private readonly sorobanService: SorobanService,
     private readonly notificationsService: NotificationsService,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   async findAllPaginated(
     query: ListSeasonsDto,
@@ -61,10 +61,10 @@ export class SeasonsService {
     const top_winner: SeasonTopWinnerDto | null =
       season.is_finalized && tw
         ? {
-          user_id: tw.id,
-          username: tw.username,
-          stellar_address: tw.stellar_address,
-        }
+            user_id: tw.id,
+            username: tw.username,
+            stellar_address: tw.stellar_address,
+          }
         : null;
 
     return {

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, FindOptionsWhere } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 
 @Injectable()
@@ -8,7 +8,7 @@ export class NotificationsService {
   constructor(
     @InjectRepository(Notification)
     private readonly notificationsRepository: Repository<Notification>,
-  ) { }
+  ) {}
 
   async create(
     userAddress: string,
@@ -43,7 +43,7 @@ export class NotificationsService {
     const take = Math.min(limit, 100);
     const skip = (page - 1) * take;
 
-    const where: any = { user_address: userAddress };
+    const where: Record<string, unknown> = { user_address: userAddress };
     if (readFilter !== undefined) {
       where.read = readFilter;
     }
@@ -52,7 +52,7 @@ export class NotificationsService {
     }
 
     const [data, total] = await this.notificationsRepository.findAndCount({
-      where,
+      where: where as FindOptionsWhere<Notification>,
       order: { created_at: 'DESC' },
       skip,
       take,

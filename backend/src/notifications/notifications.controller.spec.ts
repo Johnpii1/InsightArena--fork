@@ -58,9 +58,9 @@ describe('NotificationsController', () => {
         limit: 20,
         unreadCount: 1,
       };
-      const spy = jest.spyOn(service, 'findAllForUser').mockResolvedValue(
-        paginated as any,
-      );
+      const spy = jest
+        .spyOn(service, 'findAllForUser')
+        .mockResolvedValue(paginated as any);
 
       const result = await controller.getNotifications(
         'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN',
@@ -132,7 +132,10 @@ describe('NotificationsController', () => {
 
       await controller.markAsRead('1', mockUser as User);
 
-      expect(spy).toHaveBeenCalledWith(1, 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN');
+      expect(spy).toHaveBeenCalledWith(
+        1,
+        'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN',
+      );
     });
   });
 
@@ -144,7 +147,9 @@ describe('NotificationsController', () => {
 
       const result = await controller.markAllAsRead(mockUser as User);
 
-      expect(spy).toHaveBeenCalledWith('GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN');
+      expect(spy).toHaveBeenCalledWith(
+        'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN',
+      );
       expect(result).toEqual({ updated: 3 });
     });
   });
@@ -155,7 +160,10 @@ describe('NotificationsController', () => {
 
       await controller.remove('1', mockUser as User);
 
-      expect(spy).toHaveBeenCalledWith(1, 'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN');
+      expect(spy).toHaveBeenCalledWith(
+        1,
+        'GBRPYHIL2CI3WHZDTOOQFC6EB4RRJC3XNRBF7XN',
+      );
     });
   });
 });

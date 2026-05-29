@@ -72,7 +72,7 @@ export class AdminService {
     private readonly notificationsService: NotificationsService,
     private readonly sorobanService: SorobanService,
     private readonly flagsService: FlagsService,
-  ) { }
+  ) {}
 
   async getStats(): Promise<StatsResponseDto> {
     const now = new Date();
@@ -563,7 +563,8 @@ export class AdminService {
           participant.user.stellar_address,
           NotificationType.EventCancelled,
           'Competition Cancelled',
-          `The competition "${competition.title}" has been cancelled by an administrator.${shouldRefund ? ' Any applicable refunds have been initiated.' : ''
+          `The competition "${competition.title}" has been cancelled by an administrator.${
+            shouldRefund ? ' Any applicable refunds have been initiated.' : ''
           }`,
           {
             competition_id: competition.id,
@@ -748,7 +749,14 @@ export class AdminService {
     return reportData;
   }
 
-  async listCreatorEventsForModeration(query: any) {
+  async listCreatorEventsForModeration(query: {
+    status?: string;
+    creator?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'ASC' | 'DESC';
+  }) {
     const {
       status = 'all',
       creator,
@@ -780,7 +788,9 @@ export class AdminService {
 
     // Filter by creator
     if (creator) {
-      qb.andWhere('event.creator_address = :creator', { creator });
+      qb.andWhere('event.creator_address = :creator', {
+        creator: creator,
+      });
     }
 
     // Count total before pagination
@@ -837,7 +847,7 @@ export class AdminService {
     return {
       data: enrichedEvents,
       total,
-      page,
+      page: page,
       limit: take,
     };
   }

@@ -41,7 +41,7 @@ type RequestUser = Request & { user: { id: string } };
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.Admin)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) { }
+  constructor(private readonly adminService: AdminService) {}
 
   @Get('dashboard/stats')
   @Roles(Role.Admin, Role.Moderator)
