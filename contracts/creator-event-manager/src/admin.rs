@@ -117,6 +117,10 @@ pub fn initialize(
     storage.set(&DataKey::Admin(admin.clone()), &admin);
     storage.extend_ttl(&DataKey::Admin(admin.clone()), TTL_LEDGERS, TTL_LEDGERS);
 
+    // Canonical admin retrieval key
+    storage.set(&DataKey::CurrentAdmin, &admin);
+    storage.extend_ttl(&DataKey::CurrentAdmin, TTL_LEDGERS, TTL_LEDGERS);
+
     // AI agent address — address-keyed entry + canonical retrieval key
     storage.set(&DataKey::AIAgent(ai_agent.clone()), &ai_agent);
     storage.extend_ttl(

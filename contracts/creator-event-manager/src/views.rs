@@ -4,10 +4,10 @@
 //! paths so callers can inspect an event's participation, prediction volume,
 //! and completion state in a single contract view.
 
-use soroban_sdk::{contracttype, Env};
-
+use soroban_sdk::{contracttype, Env, Vec, Address};
 use crate::event::{self, EventError};
 use crate::storage;
+use crate::storage_types::DataKey;
 
 /// Aggregate statistics for one creator event.
 ///
@@ -32,6 +32,18 @@ pub struct EventStatistics {
     pub all_matches_resolved: bool,
     pub winners_verified: bool,
     pub winner_count: u32,
+}
+
+/// Public configuration snapshot for the contract.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Config {
+    pub admin: Address,
+    pub ai_agent: Address,
+    pub treasury: Address,
+    pub xlm_token: Address,
+    pub creation_fee: i128,
+    pub paused: bool,
 }
 
 /// Build aggregate statistics for an existing event.
@@ -72,4 +84,60 @@ pub fn get_event_statistics(env: &Env, event_id: u64) -> Result<EventStatistics,
         winners_verified: winner_count > 0,
         winner_count,
     })
+}
+
+/// Return the current contract configuration as a snapshot. Returns `Err` when
+/// the contract has not been initialised.
+pub fn get_config(env: &Env) -> Result<Config, &'static str> {
+    let storage = env.storage().persistent();
+
+    // Read canonical keys
+    let admin_addr = storage
+        .get::<DataKey, Address>(&DataKey::CurrentAdmin)
+        .ok_or("not_initialized")?;
+    let ai_agent = storage
+        .get::<DataKey, Address>(&DataKey::CurrentAIAgent)
+        .ok_or("not_initialized")?;
+    let treasury = storage
+        .get::<DataKey, Address>(&DataKey::CurrentTreasury)
+        .ok_or("not_initialized")?;
+    let xlm_token = storage
+        .get::<DataKey, Address>(&DataKey::CurrentXLMToken)
+        .ok_or("not_initialized")?;
+    let creation_fee = storage
+        .get::<DataKey, i128>(&DataKey::CreationFee(0))
+        .ok_or("not_initialized")?;
+    let paused = storage
+        .get::<DataKey, bool>(&DataKey::Paused(false))
+        .unwrap_or(false);
+
+    Ok(Config {
+        admin: admin_addr,
+        ai_agent,
+        treasury,
+        xlm_token,
+        creation_fee,
+        paused,
+    })
+}
+
+/// Return all event IDs that `user` has joined.
+pub fn get_user_events(env: &Env, user: Address) -> Vec<u64> {
+    // Read the current event counter (instance storage)
+    let instance = env.storage().instance();
+    let max_id: u64 = instance.get::<DataKey, u64>(&DataKey::EventCounter(0)).unwrap_or(0);
+
+    let mut out = Vec::new(env);
+    for id in 1..=max_id {
+        let participants = storage::get_event_participants(env, id);
+        // scan participants for the user
+        for i in 0..participants.len() {
+            if participants.get(i).unwrap() == user {
+                out.push_back(id);
+                break;
+            }
+        }
+    }
+
+    out
 }

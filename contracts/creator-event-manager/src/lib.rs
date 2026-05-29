@@ -11,6 +11,7 @@ pub mod storage_types;
 mod token;
 pub mod verification;
 pub mod views;
+mod fee;
 
 use soroban_sdk::{contract, contractimpl, Address, Env, String, Symbol, Vec};
 
@@ -327,6 +328,32 @@ impl CreatorEventManagerContract {
         }
     }
 
+    /// Return a snapshot of the contract configuration.
+    pub fn get_config(env: Env) -> views::Config {
+        match views::get_config(&env) {
+            Ok(cfg) => cfg,
+            Err(_) => panic!("not_initialized"),
+        }
+    }
+
+    /// Return the current treasury XLM balance.
+    pub fn get_treasury_balance(env: Env) -> i128 {
+        fee::get_treasury_balance(&env)
+    }
+
+    /// Withdraw collected fees from treasury to `to` address. Only admin may call.
+    pub fn withdraw_fees(env: Env, caller: Address, to: Address, amount: i128) {
+        match fee::withdraw_fees(&env, caller, to, amount) {
+            Ok(()) => {}
+            Err(fee::FeeError::Paused) => panic!("contract_paused"),
+            Err(fee::FeeError::Unauthorized) => panic!("unauthorized"),
+            Err(fee::FeeError::InvalidAddress) => panic!("invalid_address"),
+            Err(fee::FeeError::InvalidAmount) => panic!("invalid_amount"),
+            Err(fee::FeeError::InsufficientBalance) => panic!("insufficient_balance"),
+            Err(fee::FeeError::TransferFailed) => panic!("transfer_failed"),
+        }
+    }
+
     /// Join an event using its invite code.
     pub fn join_event(env: Env, user: Address, invite_code: Symbol) {
         match prediction::join_event(&env, user, invite_code) {
@@ -378,6 +405,11 @@ impl CreatorEventManagerContract {
     /// made no predictions for the event.
     pub fn get_user_predictions(env: Env, user: Address, event_id: u64) -> Vec<Prediction> {
         prediction::get_user_predictions(&env, user, event_id)
+    }
+
+    /// Return all events a user has joined.
+    pub fn get_user_events(env: Env, user: Address) -> Vec<u64> {
+        views::get_user_events(&env, user)
     }
 
     /// Calculate how many users predicted each outcome for a match.

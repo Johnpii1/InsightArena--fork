@@ -143,6 +143,8 @@ pub enum DataKey {
 
     /// Current AI agent address — updated by set_ai_agent; used for oracle auth.
     CurrentAIAgent,
+    /// Current admin address — set during initialize for canonical retrieval.
+    CurrentAdmin,
 
     // ── Verification keys (#790–#793) ────────────────────────────────────────
     /// Verification status for an address — true = verified, false = not verified.
