@@ -214,7 +214,9 @@ export class NotificationBroadcasterService implements OnModuleDestroy {
   private startBatchProcessor(): void {
     this.batchProcessorInterval = setInterval(() => {
       for (const key of this.batchQueue.keys()) {
-        const [userAddress, eventType] = key.split(':');
+        const colonIndex = key.indexOf(':');
+        const userAddress = key.substring(0, colonIndex);
+        const eventType = key.substring(colonIndex + 1);
         this.flushBatch(userAddress, eventType);
       }
     }, this.batchInterval);
