@@ -147,9 +147,6 @@ pub enum DataKey {
     /// Vec<Address> of participants for an event  (event_id)
     EventParticipants(u64),
 
-    /// Vec<Winner> of verified winners for an event  (event_id)
-    EventWinners(u64),
-
     // ── Initialization sentinel ──────────────────────────────────────────────
     /// Set to `true` once `initialize` has been called; prevents re-init.
     Initialized,
@@ -678,75 +675,94 @@ impl Prediction {
 }
 
 // ---------------------------------------------------------------------------
-// Winner
+// LeaderboardEntry
 // ---------------------------------------------------------------------------
 
-/// Records a user who correctly predicted matches in an event.
+/// Ranked leaderboard entry for an event participant.
 ///
-/// Stored inside the `Vec<Winner>` at `DataKey::EventWinners(event_id)`.
-/// Used for leaderboard ranking and reward distribution.
+/// Represents a user's performance in an event with full ranking information
+/// and deterministic tie-breaking. This replaces the binary Winner model to
+/// support top-N prize splits and flexible reward distributions.
+///
+/// Stored in Vec<LeaderboardEntry> (typically temporary, computed on-demand).
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Winner {
-    /// Address of the winning predictor
+pub struct LeaderboardEntry {
+    /// Address of the participant
     pub user: Address,
 
-    /// Event they participated in
+    /// Event identifier
     pub event_id: u64,
 
-    /// How many matches they predicted correctly
-    pub total_correct: u32,
+    /// Total points earned from all predictions (0, 1, or 4 per match)
+    pub total_points: u32,
 
-    /// Total number of matches in the event (denominator for accuracy)
-    pub total_matches: u32,
+    /// Number of predictions with correct 1X2 result
+    pub correct_results: u32,
 
-    /// Unix timestamp when the user submitted their last prediction
-    /// (used as tiebreaker — earlier completion ranks higher)
-    pub completion_time: u64,
+    /// Number of predictions with exact scoreline (4-point predictions)
+    pub exact_scores: u32,
 
-    /// Unix timestamp when winner status was verified on-chain
-    pub verified_at: u64,
+    /// Total number of predictions this user submitted for the event
+    pub matches_played: u32,
+
+    /// Unix timestamp of this user's most recent prediction
+    /// (used as tiebreaker — earlier submission = higher rank)
+    pub last_prediction_time: u64,
+
+    /// 1-based rank after sorting (1 is the top-ranked participant).
+    /// Set by `get_event_leaderboard` after sorting all entries.
+    pub rank: u32,
 }
 
-impl Winner {
-    /// Construct a new verified winner record.
+impl LeaderboardEntry {
+    /// Construct a new leaderboard entry (rank will be assigned later).
     pub fn new(
         user: Address,
         event_id: u64,
-        total_correct: u32,
-        total_matches: u32,
-        completion_time: u64,
-        verified_at: u64,
+        total_points: u32,
+        correct_results: u32,
+        exact_scores: u32,
+        matches_played: u32,
+        last_prediction_time: u64,
     ) -> Self {
         Self {
             user,
             event_id,
-            total_correct,
-            total_matches,
-            completion_time,
-            verified_at,
+            total_points,
+            correct_results,
+            exact_scores,
+            matches_played,
+            last_prediction_time,
+            rank: 0, // Will be assigned during leaderboard finalization
         }
     }
 
-    /// Returns accuracy as an integer percentage in the range [0, 100].
+    /// Returns `true` if this entry outranks `other` according to the tiebreaker rules.
     ///
-    /// Returns 0 when `total_matches` is 0 to avoid division by zero.
-    pub fn get_accuracy_percentage(&self) -> u32 {
-        if self.total_matches == 0 {
-            return 0;
+    /// Sort order (all descending except last_prediction_time):
+    /// 1. Higher `total_points` wins
+    /// 2. On tie: Higher `exact_scores` wins
+    /// 3. On tie: Earlier `last_prediction_time` wins (lower timestamp = better rank)
+    /// 4. On tie: Compare addresses (deterministic final tiebreaker)
+    pub fn outranks(&self, other: &LeaderboardEntry) -> bool {
+        // Primary: higher total_points
+        if self.total_points != other.total_points {
+            return self.total_points > other.total_points;
         }
-        (self.total_correct * 100) / self.total_matches
-    }
 
-    /// Returns `true` if this winner outranks `other` for leaderboard purposes.
-    ///
-    /// Primary sort: higher `total_correct` wins.
-    /// Tiebreaker: earlier `completion_time` wins (submitted predictions sooner).
-    pub fn outranks(&self, other: &Winner) -> bool {
-        if self.total_correct != other.total_correct {
-            return self.total_correct > other.total_correct;
+        // Secondary: higher exact_scores
+        if self.exact_scores != other.exact_scores {
+            return self.exact_scores > other.exact_scores;
         }
-        // Earlier completion time is better (lower value = higher rank)
-        self.completion_time < other.completion_time
+
+        // Tertiary: earlier last_prediction_time (lower = better)
+        if self.last_prediction_time != other.last_prediction_time {
+            return self.last_prediction_time < other.last_prediction_time;
+        }
+
+        // Final tiebreaker: address comparison (deterministic)
+        // Compare the addresses directly; Soroban Address implements Ord
+        self.user < other.user
     }
 }
