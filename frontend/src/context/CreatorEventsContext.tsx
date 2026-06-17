@@ -95,7 +95,11 @@ export interface CreatorEventsContextValue {
   pauseContract: () => Promise<boolean>;
   unpauseContract: () => Promise<boolean>;
 
-  submitMatchResult: (matchId: string, outcome: MatchOutcome) => Promise<boolean>;
+  submitMatchResult: (
+    matchId: string,
+    homeScore: number,
+    awayScore: number,
+  ) => Promise<boolean>;
 }
 
 const MOCK_EVENTS: CreatorEvent[] = [
@@ -522,7 +526,7 @@ export function CreatorEventsProvider({
   const pauseContract = useCallback(async () => true, []);
   const unpauseContract = useCallback(async () => true, []);
   const submitMatchResult = useCallback(
-    async (_matchId: string, _outcome: MatchOutcome) => true,
+    async (_matchId: string, _homeScore: number, _awayScore: number) => true,
     [],
   );
 
