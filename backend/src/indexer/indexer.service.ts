@@ -406,6 +406,7 @@ export class IndexerService implements OnModuleInit {
           user_address: this.readStr(base, 'user_address'),
           event_id: this.readBigInt(base, 'event_id'),
           joined_at: this.readNum(base, 'joined_at'),
+          entry_fee_paid: this.readUnsignedBigInt(base, 'entry_fee_paid'),
         };
       case 'PredictionSubmitted':
         return {
@@ -691,6 +692,17 @@ export class IndexerService implements OnModuleInit {
     }
 
     event.participant_count += 1;
+
+    const entryFeePaid = this.readUnsignedBigInt(data, 'entry_fee_paid');
+    if (BigInt(entryFeePaid) > 0n) {
+      event.prize_pool = (
+        BigInt(event.prize_pool ?? '0') + BigInt(entryFeePaid)
+      ).toString();
+      event.total_entry_fees_collected = (
+        BigInt(event.total_entry_fees_collected ?? '0') + BigInt(entryFeePaid)
+      ).toString();
+    }
+
     await this.creatorEventRepository.save(event);
 
     // Trigger notification

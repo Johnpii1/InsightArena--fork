@@ -516,6 +516,79 @@ describe('IndexerService', () => {
     });
   });
 
+  describe('handleUserJoinedEvent', () => {
+    it('extracts entry_fee_paid in the UserJoinedEvent payload', () => {
+      const data = (service as any).extractEventData('UserJoinedEvent', {
+        user_address: 'GUSER',
+        event_id: '7',
+        joined_at: 1710000000,
+        entry_fee_paid: '10000000',
+      });
+
+      expect(data).toMatchObject({
+        user_address: 'GUSER',
+        event_id: '7',
+        joined_at: 1710000000,
+        entry_fee_paid: '10000000',
+      });
+    });
+
+    it('defaults entry_fee_paid to "0" for free events', () => {
+      const data = (service as any).extractEventData('UserJoinedEvent', {
+        user_address: 'GUSER',
+        event_id: '7',
+        joined_at: 1710000000,
+      });
+
+      expect(data).toMatchObject({ entry_fee_paid: '0' });
+    });
+
+    it('adds the entry fee paid to prize_pool and total_entry_fees_collected', async () => {
+      const event = {
+        on_chain_event_id: 7,
+        participant_count: 2,
+        prize_pool: '5000000000',
+        total_entry_fees_collected: '20000000',
+      } as CreatorEvent;
+      creatorEventRepository.findOne.mockResolvedValue(event);
+      creatorEventRepository.save.mockResolvedValue(event);
+
+      await (service as any).handleUserJoinedEvent({
+        user_address: 'GUSER',
+        event_id: '7',
+        joined_at: 1710000000,
+        entry_fee_paid: '10000000',
+      });
+
+      expect(event.participant_count).toBe(3);
+      expect(event.prize_pool).toBe('5010000000');
+      expect(event.total_entry_fees_collected).toBe('30000000');
+      expect(creatorEventRepository.save).toHaveBeenCalledWith(event);
+    });
+
+    it('leaves prize_pool and total_entry_fees_collected unchanged for free events', async () => {
+      const event = {
+        on_chain_event_id: 7,
+        participant_count: 0,
+        prize_pool: '5000000000',
+        total_entry_fees_collected: '0',
+      } as CreatorEvent;
+      creatorEventRepository.findOne.mockResolvedValue(event);
+      creatorEventRepository.save.mockResolvedValue(event);
+
+      await (service as any).handleUserJoinedEvent({
+        user_address: 'GUSER',
+        event_id: '7',
+        joined_at: 1710000000,
+        entry_fee_paid: '0',
+      });
+
+      expect(event.participant_count).toBe(1);
+      expect(event.prize_pool).toBe('5000000000');
+      expect(event.total_entry_fees_collected).toBe('0');
+    });
+  });
+
   describe('retryFailedEvents', () => {
     it('should retry failed events', async () => {
       const failedEvent = {

@@ -410,10 +410,14 @@ export class CreatorEventsService {
       throw new NotFoundException(`Event ${eventId} not found`);
     }
 
-    const [statistics, matches, participants] = await Promise.all([
+    const [statistics, matches, participants, cachedEvent] = await Promise.all([
       this.contractService.getEventStatistics(eventId),
       this.contractService.getEventMatches(eventId),
       this.contractService.getEventParticipants(eventId),
+      this.creatorEventRepository.findOne({
+        where: { on_chain_event_id: Number(eventId) as unknown as number },
+        select: ['prize_pool', 'total_entry_fees_collected'],
+      }),
     ]);
 
     const matchesResolved = matches.filter((m) => m.resolved).length;
@@ -470,6 +474,8 @@ export class CreatorEventsService {
       winnerCount: statistics?.winnerCount ?? 0,
       averagePredictionsPerUser,
       completionRate,
+      prizePool: cachedEvent?.prize_pool ?? '0',
+      totalEntryFeesCollected: cachedEvent?.total_entry_fees_collected ?? '0',
     };
   }
 
