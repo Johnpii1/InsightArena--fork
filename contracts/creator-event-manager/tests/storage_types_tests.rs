@@ -238,6 +238,7 @@ fn make_match(env: &Env, match_id: u64, event_id: u64, match_time: u64) -> Match
         String::from_str(env, "Team Alpha"),
         String::from_str(env, "Team Beta"),
         match_time,
+        1u32,
     )
 }
 
@@ -330,6 +331,7 @@ fn test_match_validation_empty_team_a() {
         String::from_str(&env, ""),
         String::from_str(&env, "Beta"),
         0,
+        1u32,
     );
     assert!(m.validate().is_err());
 }
