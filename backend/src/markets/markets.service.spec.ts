@@ -17,6 +17,7 @@ import { Market } from './entities/market.entity';
 import { UserBookmark } from './entities/user-bookmark.entity';
 import { Prediction } from '../predictions/entities/prediction.entity';
 import { MarketsService } from './markets.service';
+import { WebhookDispatcherService } from '../webhooks/services/webhook-dispatcher.service';
 
 type MockRepo = jest.Mocked<
   Pick<Repository<Market>, 'create' | 'save' | 'findOne' | 'find'>
@@ -116,6 +117,10 @@ describe('MarketsService', () => {
         {
           provide: DataSource,
           useValue: dataSource,
+        },
+        {
+          provide: WebhookDispatcherService,
+          useValue: { emit: jest.fn() },
         },
       ],
     }).compile();
@@ -307,6 +312,7 @@ describe('MarketsService.findFeaturedMarkets', () => {
         { provide: UsersService, useValue: {} },
         { provide: SorobanService, useValue: {} },
         { provide: DataSource, useValue: {} },
+        { provide: WebhookDispatcherService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -464,6 +470,10 @@ describe('MarketsService.update', () => {
           provide: DataSource,
           useValue: {},
         },
+        {
+          provide: WebhookDispatcherService,
+          useValue: { emit: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -618,6 +628,10 @@ describe('MarketsService.getPredictionStats', () => {
           provide: DataSource,
           useValue: {},
         },
+        {
+          provide: WebhookDispatcherService,
+          useValue: { emit: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -743,6 +757,7 @@ describe('MarketsService.cancelMarket', () => {
         { provide: UsersService, useValue: {} },
         { provide: SorobanService, useValue: sorobanService },
         { provide: DataSource, useValue: {} },
+        { provide: WebhookDispatcherService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 

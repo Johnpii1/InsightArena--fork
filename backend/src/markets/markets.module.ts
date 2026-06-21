@@ -10,6 +10,7 @@ import { MarketsController } from './markets.controller';
 import { UsersModule } from '../users/users.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { DisputesModule } from '../disputes/disputes.module';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DisputesModule } from '../disputes/disputes.module';
     UsersModule,
     AnalyticsModule,
     DisputesModule,
+    WebhooksModule,
   ],
   controllers: [MarketsController],
   providers: [MarketsService],

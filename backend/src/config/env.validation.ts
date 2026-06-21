@@ -43,6 +43,15 @@ class EnvironmentVariables {
 
   @IsNumber()
   PORT: number = 3000;
+
+  @IsNumber()
+  WEBHOOK_MAX_ATTEMPTS: number = 5;
+
+  @IsNumber()
+  WEBHOOK_TIMEOUT_MS: number = 5000;
+
+  @IsNumber()
+  WEBHOOK_BATCH_SIZE: number = 50;
 }
 
 export function validate(config: Record<string, unknown>) {

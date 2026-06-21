@@ -35,6 +35,7 @@ import { DisputesModule } from './disputes/disputes.module';
 import { ContractModule } from './contract/contract.module';
 import { CacheWarmingModule } from './cache/cache-warming.module';
 import { WebsocketModule } from './websocket/websocket.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { WebsocketModule } from './websocket/websocket.module';
     ContractModule,
     CacheWarmingModule,
     WebsocketModule,
+    WebhooksModule,
   ],
 
   controllers: [AppController],

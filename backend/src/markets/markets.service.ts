@@ -31,6 +31,7 @@ import { MarketTemplate } from './entities/market-template.entity';
 import { Market } from './entities/market.entity';
 import { UserBookmark } from './entities/user-bookmark.entity';
 import { Prediction } from '../predictions/entities/prediction.entity';
+import { WebhookDispatcherService } from '../webhooks/services/webhook-dispatcher.service';
 
 @Injectable()
 export class MarketsService {
@@ -60,6 +61,7 @@ export class MarketsService {
     private readonly usersService: UsersService,
     private readonly sorobanService: SorobanService,
     private readonly dataSource: DataSource,
+    private readonly webhookDispatcher: WebhookDispatcherService,
   ) {}
 
   /**
@@ -247,7 +249,23 @@ export class MarketsService {
         participant_count: 0,
       });
 
-      return await this.marketsRepository.save(market);
+      const saved = await this.marketsRepository.save(market);
+
+      await this.webhookDispatcher.emit('market.created', {
+        id: saved.id,
+        on_chain_market_id: saved.on_chain_market_id,
+        title: saved.title,
+        description: saved.description,
+        category: saved.category,
+        outcome_options: saved.outcome_options,
+        end_time: saved.end_time,
+        resolution_time: saved.resolution_time,
+        is_public: saved.is_public,
+        creator_id: saved.creator?.id,
+        created_at: saved.created_at,
+      });
+
+      return saved;
     } catch (err) {
       this.logger.error(
         'Failed to save market to DB after Soroban success',
@@ -324,7 +342,21 @@ export class MarketsService {
 
     market.is_resolved = true;
     market.resolved_outcome = outcome;
-    return this.marketsRepository.save(market);
+    const saved = await this.marketsRepository.save(market);
+
+    await this.webhookDispatcher.emit('market.resolved', {
+      id: saved.id,
+      on_chain_market_id: saved.on_chain_market_id,
+      title: saved.title,
+      description: saved.description,
+      category: saved.category,
+      outcome_options: saved.outcome_options,
+      resolved_outcome: saved.resolved_outcome,
+      creator_id: saved.creator?.id,
+      resolved_at: new Date(),
+    });
+
+    return saved;
   }
 
   /**
