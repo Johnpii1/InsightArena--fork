@@ -65,7 +65,7 @@ export class DisputesService {
 
     // Check if dispute already exists for this market
     const existingDispute = await this.disputesRepository.findOne({
-      where: { marketId, status: DisputeStatus.PENDING },
+      where: { marketId },
     });
 
     if (existingDispute) {
@@ -161,6 +161,35 @@ export class DisputesService {
       relations: ['disputant', 'resolvedBy'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  /**
+   * Find disputes filed by a specific user with pagination
+   */
+  async findMyDisputes(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<{
+    disputes: Dispute[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const [disputes, total] = await this.disputesRepository.findAndCount({
+      where: { disputantId: userId },
+      relations: ['market', 'resolvedBy'],
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      disputes,
+      total,
+      page,
+      limit,
+    };
   }
 
   /**

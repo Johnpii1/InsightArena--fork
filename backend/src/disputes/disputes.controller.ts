@@ -55,6 +55,40 @@ export class DisputesController {
     return this.disputesService.create(createDisputeDto, user);
   }
 
+  @Get('my')
+  @ApiOperation({ summary: 'Get disputes filed by the current user' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Disputes retrieved successfully',
+  })
+  async findMyDisputes(
+    @CurrentUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<{
+    disputes: Dispute[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 20;
+
+    return this.disputesService.findMyDisputes(user.id, pageNum, limitNum);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a dispute by ID' })
   @ApiParam({ name: 'id', description: 'Dispute ID' })

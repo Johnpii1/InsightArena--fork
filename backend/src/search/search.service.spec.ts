@@ -23,6 +23,7 @@ type MockQb<T> = jest.Mocked<
     | 'skip'
     | 'take'
     | 'getMany'
+    | 'getManyAndCount'
   >
 >;
 
@@ -37,7 +38,8 @@ function makeQb<T>(results: T[]): MockQb<T> {
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),
     getMany: jest.fn().mockResolvedValue(results),
-  } as MockQb<T>;
+    getManyAndCount: jest.fn().mockResolvedValue([results, results.length]),
+  } as unknown as MockQb<T>;
   return qb;
 }
 

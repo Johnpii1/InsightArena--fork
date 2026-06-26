@@ -89,6 +89,9 @@ export class GlobalSearchResponseDto {
   competitions: CompetitionSearchResult[];
 
   @ApiProperty() total: number;
+  @ApiPropertyOptional() total_markets?: number;
+  @ApiPropertyOptional() total_users?: number;
+  @ApiPropertyOptional() total_competitions?: number;
   @ApiProperty() page: number;
   @ApiProperty() limit: number;
 }

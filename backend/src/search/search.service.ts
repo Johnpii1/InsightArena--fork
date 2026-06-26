@@ -31,28 +31,42 @@ export class SearchService {
     const searchType = dto.type ?? SearchType.All;
     const query = dto.query;
 
-    const [markets, users, competitions] = await Promise.all([
+    const [
+      [markets, total_markets],
+      [users, total_users],
+      [competitions, total_competitions],
+    ] = await Promise.all([
       searchType === SearchType.All || searchType === SearchType.Markets
         ? this.searchMarkets(query, skip, limit)
-        : Promise.resolve([]),
+        : Promise.resolve([[], 0] as [Market[], number]),
       searchType === SearchType.All || searchType === SearchType.Users
         ? this.searchUsers(query, skip, limit)
-        : Promise.resolve([]),
+        : Promise.resolve([[], 0] as [User[], number]),
       searchType === SearchType.All || searchType === SearchType.Competitions
         ? this.searchCompetitions(query, skip, limit)
-        : Promise.resolve([]),
+        : Promise.resolve([[], 0] as [Competition[], number]),
     ]);
 
-    const total = markets.length + users.length + competitions.length;
+    const total = total_markets + total_users + total_competitions;
 
-    return { markets, users, competitions, total, page, limit };
+    return {
+      markets,
+      users,
+      competitions,
+      total,
+      total_markets,
+      total_users,
+      total_competitions,
+      page,
+      limit,
+    };
   }
 
   private async searchMarkets(
     query: string,
     skip: number,
     limit: number,
-  ): Promise<Market[]> {
+  ): Promise<[Market[], number]> {
     return this.marketsRepository
       .createQueryBuilder('market')
       .select([
@@ -75,14 +89,14 @@ export class SearchService {
       )
       .skip(skip)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
   }
 
   private async searchUsers(
     query: string,
     skip: number,
     limit: number,
-  ): Promise<User[]> {
+  ): Promise<[User[], number]> {
     return this.usersRepository
       .createQueryBuilder('user')
       .select([
@@ -103,14 +117,14 @@ export class SearchService {
       )
       .skip(skip)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
   }
 
   private async searchCompetitions(
     query: string,
     skip: number,
     limit: number,
-  ): Promise<Competition[]> {
+  ): Promise<[Competition[], number]> {
     return this.competitionsRepository
       .createQueryBuilder('competition')
       .select([
@@ -135,6 +149,6 @@ export class SearchService {
       )
       .skip(skip)
       .take(limit)
-      .getMany();
+      .getManyAndCount();
   }
 }
