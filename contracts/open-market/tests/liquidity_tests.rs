@@ -1573,11 +1573,84 @@ fn test_get_outcome_price_reflects_post_swap_reserves() {
     // Prices should move in correct direction:
     // - YES reserve increased (more YES in pool), so YES price goes UP
     // - NO reserve decreased (NO taken from pool), so NO price goes DOWN
-    assert!(price_yes_after > price_yes_before, "YES reserve should increase after selling YES");
-    assert!(price_no_after < price_no_before, "NO reserve should decrease after buying NO");
+    assert!(
+        price_yes_after > price_yes_before,
+        "YES reserve should increase after selling YES"
+    );
+    assert!(
+        price_no_after < price_no_before,
+        "NO reserve should decrease after buying NO"
+    );
 
     // Total reserves change by swap_amount (added) minus amount_out (removed)
     let total_after = price_yes_after + price_no_after;
-    assert_eq!(total_after, total_before + swap_amount - amount_out,
-        "Total reserves should reflect net change from swap");
+    assert_eq!(
+        total_after,
+        total_before + swap_amount - amount_out,
+        "Total reserves should reflect net change from swap"
+    );
+}
+
+#[test]
+fn test_get_pool_volume_24h_returns_zero_outside_window() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, _admin, _oracle, xlm_token) = deploy_with_token(&env);
+
+    let provider = Address::generate(&env);
+    let trader1 = Address::generate(&env);
+
+    let sa = StellarAssetClient::new(&env, &xlm_token);
+    let token = TokenClient::new(&env, &xlm_token);
+
+    let market_id = client.create_market(&_admin, &lp_market_params(&env));
+
+    // Add liquidity
+    let liquidity = 1_000_000_i128;
+    sa.mint(&provider, &liquidity);
+    token.approve(&provider, &client.address, &liquidity, &9999);
+    client.add_liquidity(&provider, &market_id, &liquidity);
+
+    // Perform swaps totaling V XLM
+    let swap_amount = 100_000_i128;
+    sa.mint(&trader1, &swap_amount);
+    token.approve(&trader1, &client.address, &swap_amount, &9999);
+    client.swap_outcome(
+        &trader1,
+        &market_id,
+        &symbol_short!("yes"),
+        &symbol_short!("no"),
+        &swap_amount,
+        &0_i128,
+    );
+
+    // Assert get_pool_volume_24h > 0 immediately
+    let volume_immediate = client.get_pool_volume_24h(&market_id);
+    assert!(volume_immediate > 0);
+    assert_eq!(volume_immediate, swap_amount);
+
+    // Advance ledger by 24h + 1s (86,400 + 1 seconds)
+    let current_time = env.ledger().timestamp();
+    env.ledger().set_timestamp(current_time + 86_400 + 1);
+
+    // Assert get_pool_volume_24h == 0
+    let volume_after_24h = client.get_pool_volume_24h(&market_id);
+    assert_eq!(volume_after_24h, 0);
+
+    // Perform a new swap
+    let new_swap_amount = 50_000_i128;
+    sa.mint(&trader1, &new_swap_amount);
+    token.approve(&trader1, &client.address, &new_swap_amount, &9999);
+    client.swap_outcome(
+        &trader1,
+        &market_id,
+        &symbol_short!("yes"),
+        &symbol_short!("no"),
+        &new_swap_amount,
+        &0_i128,
+    );
+
+    // Assert get_pool_volume_24h == new_swap_amount
+    let volume_after_new_swap = client.get_pool_volume_24h(&market_id);
+    assert_eq!(volume_after_new_swap, new_swap_amount);
 }
