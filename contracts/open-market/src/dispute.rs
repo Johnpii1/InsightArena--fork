@@ -153,7 +153,7 @@ pub fn resolve_dispute(
     }
 
     // Remove market_id from active dispute list
-    let mut active_list: Vec<u64> = env
+    let active_list: Vec<u64> = env
         .storage()
         .persistent()
         .get(&DataKey::ActiveDisputeList)

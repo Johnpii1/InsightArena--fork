@@ -622,7 +622,7 @@ fn list_markets_pagination_returns_correct_slices_with_no_gaps() {
     for i in 0..10 {
         let id = all_ids.get(i).unwrap();
         assert!(!seen.contains(id), "duplicate market_id {}", id);
-        seen.push_back(*id);
+        seen.push_back(id);
     }
 
     let last_partial = client.list_markets(&9_u64, &5_u32);
