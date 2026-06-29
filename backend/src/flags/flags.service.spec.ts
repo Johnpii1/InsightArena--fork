@@ -203,6 +203,107 @@ describe('FlagsService', () => {
         ConflictException,
       );
     });
+
+    it('should allow re-flagging after flag is resolved', async () => {
+      const createFlagDto = {
+        market_id: 'market-1',
+        reason: FlagReason.MISINFORMATION,
+        description: 'This is misinformation',
+      };
+
+      jest.spyOn(marketsRepository, 'findOne').mockResolvedValue(mockMarket);
+      jest.spyOn(flagsRepository, 'findOne').mockResolvedValue(null);
+      const newFlag = {
+        ...createMockFlag(),
+        id: 'flag-2',
+        reason: FlagReason.MISINFORMATION,
+        description: 'This is misinformation',
+      };
+      jest.spyOn(flagsRepository, 'create').mockReturnValue(newFlag);
+      jest.spyOn(flagsRepository, 'save').mockResolvedValue(newFlag);
+
+      const result = await service.createFlag('user-1', createFlagDto);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'flag-2',
+          market_id: 'market-1',
+          user_id: 'user-1',
+          reason: FlagReason.MISINFORMATION,
+          status: FlagStatus.PENDING,
+        }),
+      );
+      expect(flagsRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          user_id: 'user-1',
+          market_id: 'market-1',
+          status: FlagStatus.PENDING,
+        },
+      });
+    });
+
+    it('should allow re-flagging after flag is dismissed', async () => {
+      const createFlagDto = {
+        market_id: 'market-1',
+        reason: FlagReason.SPAM,
+        description: 'This is spam',
+      };
+
+      jest.spyOn(marketsRepository, 'findOne').mockResolvedValue(mockMarket);
+      jest.spyOn(flagsRepository, 'findOne').mockResolvedValue(null);
+      const newFlag = {
+        ...createMockFlag(),
+        id: 'flag-3',
+        reason: FlagReason.SPAM,
+        description: 'This is spam',
+      };
+      jest.spyOn(flagsRepository, 'create').mockReturnValue(newFlag);
+      jest.spyOn(flagsRepository, 'save').mockResolvedValue(newFlag);
+
+      const result = await service.createFlag('user-1', createFlagDto);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'flag-3',
+          market_id: 'market-1',
+          user_id: 'user-1',
+          reason: FlagReason.SPAM,
+          status: FlagStatus.PENDING,
+        }),
+      );
+      expect(flagsRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          user_id: 'user-1',
+          market_id: 'market-1',
+          status: FlagStatus.PENDING,
+        },
+      });
+    });
+
+    it('should create first flag on market successfully', async () => {
+      const createFlagDto = {
+        market_id: 'market-1',
+        reason: FlagReason.INAPPROPRIATE_CONTENT,
+        description: 'This is inappropriate',
+      };
+
+      jest.spyOn(marketsRepository, 'findOne').mockResolvedValue(mockMarket);
+      jest.spyOn(flagsRepository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(flagsRepository, 'create').mockReturnValue(createMockFlag());
+      jest.spyOn(flagsRepository, 'save').mockResolvedValue(createMockFlag());
+
+      const result = await service.createFlag('user-1', createFlagDto);
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'flag-1',
+          market_id: 'market-1',
+          user_id: 'user-1',
+          reason: FlagReason.INAPPROPRIATE_CONTENT,
+          status: FlagStatus.PENDING,
+        }),
+      );
+    });
   });
 
   describe('listFlags', () => {

@@ -27,6 +27,7 @@ import {
   FollowersListDto,
   FollowingListDto,
   FollowActionResponseDto,
+  FollowStatsResponseDto,
 } from './dto/user-follow.dto';
 import { User } from './entities/user.entity';
 import {
@@ -260,5 +261,20 @@ export class UsersController {
     @Query() query: PaginationDto,
   ): Promise<FollowingListDto> {
     return this.usersService.getFollowing(address, query);
+  }
+
+  @Get(':address/follow-stats')
+  @Public()
+  @ApiOperation({ summary: 'Get follower and following counts for a user' })
+  @ApiResponse({
+    status: 200,
+    description: 'User follow statistics',
+    type: FollowStatsResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getFollowStats(
+    @Param('address') address: string,
+  ): Promise<FollowStatsResponseDto> {
+    return this.usersService.getFollowStats(address);
   }
 }

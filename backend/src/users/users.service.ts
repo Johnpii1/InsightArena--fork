@@ -522,6 +522,25 @@ export class UsersService {
     return { data, total, page, limit };
   }
 
+  async getFollowStats(address: string): Promise<{ followers_count: number; following_count: number }> {
+    const user = await this.findByAddress(address);
+
+    const [, followersCount] = await this.followRepository
+      .createQueryBuilder('follow')
+      .where('follow.following_id = :userId', { userId: user.id })
+      .getManyAndCount();
+
+    const [, followingCount] = await this.followRepository
+      .createQueryBuilder('follow')
+      .where('follow.follower_id = :userId', { userId: user.id })
+      .getManyAndCount();
+
+    return {
+      followers_count: followersCount,
+      following_count: followingCount,
+    };
+  }
+
   private mapUserToFollowResponse(user: User): UserFollowResponseDto {
     return {
       id: user.id,

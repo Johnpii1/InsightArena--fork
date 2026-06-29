@@ -547,6 +547,87 @@ fn test_assert_escrow_solvent_when_balance_is_short() {
     assert_eq!(result, Err(InsightArenaError::EscrowEmpty));
 }
 
+/// Test that assert_escrow_solvent detects underfunding when contract balance < obligations.
+/// Verifies: solvency check catches insolvent state and can detect restoration.
+#[test]
+fn test_assert_escrow_solvent_detects_underfunding() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let xlm_token = register_token(&env);
+    let client = deploy(&env, &xlm_token);
+
+    let predictor_a = Address::generate(&env);
+    let predictor_b = Address::generate(&env);
+    let market_id = 1_u64;
+
+    seed_unresolved_market(&env, &client, market_id);
+
+    let stake_a = 20_000_000_i128;
+    let stake_b = 30_000_000_i128;
+    let total_stakes = stake_a + stake_b;
+
+    env.as_contract(&client.address, || {
+        let mut predictors = Vec::new(&env);
+        predictors.push_back(predictor_a.clone());
+        predictors.push_back(predictor_b.clone());
+        env.storage()
+            .persistent()
+            .set(&DataKey::PredictorList(market_id), &predictors);
+        env.storage()
+            .persistent()
+            .set(&DataKey::MarketCount, &1_u64);
+        env.storage().persistent().set(
+            &DataKey::Prediction(market_id, predictor_a.clone()),
+            &Prediction::new(
+                market_id,
+                predictor_a.clone(),
+                symbol_short!("yes"),
+                stake_a,
+                env.ledger().timestamp(),
+            ),
+        );
+        env.storage().persistent().set(
+            &DataKey::Prediction(market_id, predictor_b.clone()),
+            &Prediction::new(
+                market_id,
+                predictor_b.clone(),
+                symbol_short!("no"),
+                stake_b,
+                env.ledger().timestamp(),
+            ),
+        );
+    });
+
+    // Fund with exact amounts required
+    fund(&env, &xlm_token, &client.address, total_stakes);
+
+    // Verify solvency is OK when balance covers obligations
+    let result_ok = env.as_contract(&client.address, || assert_escrow_solvent(&env));
+    assert_eq!(result_ok, Ok(()));
+
+    // Force insolvent state by transferring XLM out
+    let token = TokenClient::new(&env, &xlm_token);
+    let withdrawal_amount = 1_000_000_i128;
+    env.as_contract(&client.address, || {
+        token.transfer(
+            &client.address,
+            &Address::generate(&env),
+            &withdrawal_amount,
+        );
+    });
+
+    // Verify solvency check detects underfunding
+    let result_underfunded = env.as_contract(&client.address, || assert_escrow_solvent(&env));
+    assert_eq!(result_underfunded, Err(InsightArenaError::EscrowEmpty));
+
+    // Restore the balance
+    fund(&env, &xlm_token, &client.address, withdrawal_amount);
+
+    // Verify solvency returns OK after restoration
+    let result_restored = env.as_contract(&client.address, || assert_escrow_solvent(&env));
+    assert_eq!(result_restored, Ok(()));
+}
+
 // ── Edge Case: Zero Losers Scenario ───────────────────────────────────────────
 
 /// Test payout handling when there are zero losers (all participants chose the winning outcome).
