@@ -212,6 +212,96 @@ describe('SeasonsService', () => {
         }),
       );
     });
+
+    it('throws NotFoundException when no season at all exists in database', async () => {
+      seasonsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as never);
+
+      await expect(service.findActive()).rejects.toThrow(NotFoundException);
+      await expect(service.findActive()).rejects.toThrow(
+        'No active season exists',
+      );
+    });
+
+    it('throws NotFoundException when season exists but window has not started yet', async () => {
+      const futureStart = new Date();
+      futureStart.setFullYear(futureStart.getFullYear() + 1);
+      const futureEnd = new Date(futureStart);
+      futureEnd.setMonth(futureEnd.getMonth() + 6);
+
+      seasonsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as never);
+
+      await expect(service.findActive()).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when season exists but has already ended', async () => {
+      const pastStart = new Date();
+      pastStart.setFullYear(pastStart.getFullYear() - 2);
+      const pastEnd = new Date();
+      pastEnd.setFullYear(pastEnd.getFullYear() - 1);
+
+      seasonsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as never);
+
+      await expect(service.findActive()).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns the season with latest starts_at when multiple active seasons overlap', async () => {
+      const olderSeason: Season = {
+        id: 's1',
+        season_number: 1,
+        name: 'Season 1',
+        starts_at: new Date('2020-01-01'),
+        ends_at: new Date('2099-01-01'),
+        reward_pool_stroops: '1',
+        is_active: true,
+        is_finalized: false,
+        top_winner: null,
+        on_chain_season_id: null,
+        soroban_tx_hash: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+      const newerSeason: Season = {
+        id: 's2',
+        season_number: 2,
+        name: 'Season 2',
+        starts_at: new Date('2022-01-01'),
+        ends_at: new Date('2099-01-01'),
+        reward_pool_stroops: '1',
+        is_active: true,
+        is_finalized: false,
+        top_winner: null,
+        on_chain_season_id: null,
+        soroban_tx_hash: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      seasonsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(newerSeason),
+      } as never);
+
+      const result = await service.findActive();
+
+      expect(result).toEqual(newerSeason);
+    });
   });
 
   describe('create', () => {

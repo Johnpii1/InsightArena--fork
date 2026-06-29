@@ -78,6 +78,9 @@ pub enum InsightArenaError {
     /// The user has already successfully claimed their payout for this market.
     /// Raised to prevent double-claiming after `payout_claimed` is set to true.
     PayoutAlreadyClaimed = 24,
+    /// The market has already been closed and is no longer accepting changes.
+    /// Raised when a mutation (fee update, end_time extension) is attempted after close.
+    MarketAlreadyClosed = 25,
 
     // ── Escrow ────────────────────────────────────────────────────────────────
     /// The contract's escrow balance is insufficient to complete the transfer.

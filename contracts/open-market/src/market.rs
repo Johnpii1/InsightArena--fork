@@ -518,6 +518,72 @@ pub fn update_creator_fee(
     Ok(())
 }
 
+/// Extend the end_time of a market.
+///
+/// Only the market creator may call this, and only before `end_time` has passed.
+/// The new end_time must be strictly later than the current end_time.
+/// The resolution_time is automatically adjusted if needed to maintain the constraint
+/// that resolution_time >= end_time.
+///
+/// Validation order:
+/// 1. Market exists
+/// 2. Market has not been resolved
+/// 3. Market has not been cancelled
+/// 4. Market has not been closed
+/// 5. `caller` is the market creator
+/// 6. Current time is before market end_time (market is still open)
+/// 7. `new_end_time` is strictly later than current `end_time`
+pub fn extend_market_end_time(
+    env: &Env,
+    creator: Address,
+    market_id: u64,
+    new_end_time: u64,
+) -> Result<(), InsightArenaError> {
+    config::ensure_not_paused(env)?;
+
+    creator.require_auth();
+
+    let mut market = get_market(env, market_id)?;
+
+    if market.creator != creator {
+        return Err(InsightArenaError::Unauthorized);
+    }
+
+    if market.is_resolved {
+        return Err(InsightArenaError::MarketAlreadyResolved);
+    }
+
+    if market.is_cancelled {
+        return Err(InsightArenaError::MarketAlreadyCancelled);
+    }
+
+    if market.is_closed {
+        return Err(InsightArenaError::MarketAlreadyClosed);
+    }
+
+    let now = env.ledger().timestamp();
+    if now >= market.end_time {
+        return Err(InsightArenaError::MarketExpired);
+    }
+
+    if new_end_time <= market.end_time {
+        return Err(InsightArenaError::InvalidTimeRange);
+    }
+
+    market.end_time = new_end_time;
+
+    if market.resolution_time < new_end_time {
+        market.resolution_time = new_end_time;
+    }
+
+    env.storage()
+        .persistent()
+        .set(&DataKey::Market(market_id), &market);
+    bump_market(env, market_id);
+
+    Ok(())
+}
+
 /// Cancel a market that could not be resolved (oracle failure, creator error, etc.).
 ///
 /// Upon cancellation every predictor's full stake is refunded via the escrow

@@ -175,6 +175,16 @@ impl InsightArenaContract {
         market::update_creator_fee(&env, creator, market_id, new_creator_fee_bps)
     }
 
+    /// Extend the end_time of a market before it closes.
+    pub fn extend_market_end_time(
+        env: Env,
+        creator: Address,
+        market_id: u64,
+        new_end_time: u64,
+    ) -> Result<(), InsightArenaError> {
+        market::extend_market_end_time(&env, creator, market_id, new_end_time)
+    }
+
     /// Cancel a market and refund all stakers.
     pub fn cancel_market(
         env: Env,
