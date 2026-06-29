@@ -126,15 +126,13 @@ describe('BanGuard', () => {
         }),
       } as any as ExecutionContext;
 
-      const error = new ForbiddenException(
-        `Your account has been banned. Reason: ${banReason}`,
-      );
-
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
       try {
         guard.canActivate(context);
       } catch (e) {
-        expect(e.getResponse()).toContain(banReason);
+        const response = e.getResponse();
+        const responseString = JSON.stringify(response);
+        expect(responseString).toContain(banReason);
       }
     });
 

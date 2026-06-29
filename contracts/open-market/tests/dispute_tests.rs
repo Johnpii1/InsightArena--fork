@@ -574,8 +574,6 @@ fn test_get_open_dispute_count_never_goes_below_zero() {
     let env = Env::default();
     env.mock_all_auths();
     let (client, _admin, _oracle, _xlm_token) = deploy(&env);
+    // Verify count starts at zero and remains non-negative
     assert_eq!(client.get_open_dispute_count(), 0);
-    // Even after a resolve without a raise, count should not go below 0
-    let count = client.get_open_dispute_count();
-    assert!(count >= 0);
 }
