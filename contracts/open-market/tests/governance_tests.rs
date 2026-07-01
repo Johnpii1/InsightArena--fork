@@ -191,7 +191,7 @@ fn test_cancel_proposal_by_proposer_succeeds() {
     client.cancel_proposal(&proposer, &id);
 
     let proposal = client.get_proposal(&id);
-    assert!(proposal.executed);
+    assert!(proposal.cancelled);
 }
 
 #[test]
@@ -207,7 +207,7 @@ fn test_cancel_proposal_by_admin_succeeds() {
     client.cancel_proposal(&admin, &id);
 
     let proposal = client.get_proposal(&id);
-    assert!(proposal.executed);
+    assert!(proposal.cancelled);
 }
 
 #[test]
