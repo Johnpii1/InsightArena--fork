@@ -6,7 +6,9 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { SorobanService } from '../soroban/soroban.service';
+
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { CreateMarketDto } from './dto/create-market.dto';
@@ -121,6 +123,15 @@ describe('MarketsService', () => {
         {
           provide: WebhookDispatcherService,
           useValue: { emit: jest.fn() },
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: {
+            get: jest.fn(),
+            set: jest.fn(),
+            del: jest.fn(),
+            reset: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -325,7 +336,7 @@ describe('MarketsService', () => {
         },
       ] as Market[];
 
-      marketsRepository.find.mockResolvedValue(markets as Market[]);
+      marketsRepository.find.mockResolvedValue(markets);
 
       const result = await service.getTrendingMarkets({ page: 1, limit: 20 });
 
@@ -379,6 +390,14 @@ describe('MarketsService.findFeaturedMarkets', () => {
   let service: MarketsService;
   let marketsRepository: jest.Mocked<Repository<Market>>;
 
+  const cacheMock = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+    reset: jest.fn(),
+  };
+
+
   const makeFeaturedMarket = (overrides: Partial<Market> = {}): Market =>
     ({
       id: `market-${Math.random()}`,
@@ -409,6 +428,7 @@ describe('MarketsService.findFeaturedMarkets', () => {
         { provide: SorobanService, useValue: {} },
         { provide: DataSource, useValue: {} },
         { provide: WebhookDispatcherService, useValue: { emit: jest.fn() } },
+        { provide: CACHE_MANAGER, useValue: cacheMock },
       ],
     }).compile();
 
@@ -570,6 +590,10 @@ describe('MarketsService.update', () => {
           provide: WebhookDispatcherService,
           useValue: { emit: jest.fn() },
         },
+        {
+          provide: CACHE_MANAGER,
+          useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -728,6 +752,10 @@ describe('MarketsService.getPredictionStats', () => {
           provide: WebhookDispatcherService,
           useValue: { emit: jest.fn() },
         },
+        {
+          provide: CACHE_MANAGER,
+          useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -854,6 +882,10 @@ describe('MarketsService.cancelMarket', () => {
         { provide: SorobanService, useValue: sorobanService },
         { provide: DataSource, useValue: {} },
         { provide: WebhookDispatcherService, useValue: { emit: jest.fn() } },
+        {
+          provide: CACHE_MANAGER,
+          useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() },
+        },
       ],
     }).compile();
 

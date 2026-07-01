@@ -540,7 +540,9 @@ describe('UsersService', () => {
         total_predictions: 0,
         correct_predictions: 0,
       };
-      jest.spyOn(repository, 'findOneBy').mockResolvedValue(userWithNoPredictions);
+      jest
+        .spyOn(repository, 'findOneBy')
+        .mockResolvedValue(userWithNoPredictions);
 
       const result = await service.getMyStats(mockUser.id);
 

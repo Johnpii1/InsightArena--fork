@@ -3,12 +3,17 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { DataSource, Repository } from 'typeorm';
+import { CACHE_WARMING_KEYS } from '../cache/cache-warming.keys';
+
 import { SorobanService } from '../soroban/soroban.service';
 import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -45,6 +50,7 @@ export class MarketsService {
     string,
     { data: PredictionStatsDto[]; cachedAt: number }
   > = new Map();
+
   private readonly PREDICTION_STATS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
   constructor(
@@ -62,6 +68,7 @@ export class MarketsService {
     private readonly sorobanService: SorobanService,
     private readonly dataSource: DataSource,
     private readonly webhookDispatcher: WebhookDispatcherService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
   /**
@@ -345,6 +352,13 @@ export class MarketsService {
     market.resolved_at = new Date();
     const saved = await this.marketsRepository.save(market);
 
+    // Invalidate caches immediately after market state changes
+    this.trendingCache = null;
+    await this.cacheManager.del(CACHE_WARMING_KEYS.trendingEvents);
+    await this.cacheManager.del(
+      CACHE_WARMING_KEYS.popularEventDetail(saved.id),
+    );
+
     await this.webhookDispatcher.emit('market.resolved', {
       id: saved.id,
       on_chain_market_id: saved.on_chain_market_id,
@@ -566,7 +580,16 @@ export class MarketsService {
 
     try {
       market.is_cancelled = true;
-      return await this.marketsRepository.save(market);
+      const saved = await this.marketsRepository.save(market);
+
+      // Invalidate caches immediately after market state changes
+      this.trendingCache = null;
+      await this.cacheManager.del(CACHE_WARMING_KEYS.trendingEvents);
+      await this.cacheManager.del(
+        CACHE_WARMING_KEYS.popularEventDetail(saved.id),
+      );
+
+      return saved;
     } catch (err) {
       this.logger.error(
         'Failed to update market in DB after Soroban success',

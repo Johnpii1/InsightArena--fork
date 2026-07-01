@@ -63,18 +63,25 @@ export class EventsGateway
     }
 
     // Heartbeat
-    const heartbeat = setInterval(() => {
-      client.emit('ping');
-    }, 25_000);
-    heartbeat.unref?.();
-    this.clearHeartbeat(client.id);
-    this.heartbeats.set(client.id, heartbeat);
+    // In Jest/unit test runs we don't want to keep background intervals alive,
+    // which can cause test processes to hang until CI timeout.
+    const isTestRun =
+      process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID);
 
-    client.on('pong', () => {
-      this.logger.debug(`Pong from ${client.id}`);
-    });
+    if (!isTestRun) {
+      const heartbeat = setInterval(() => {
+        client.emit('ping');
+      }, 25_000);
+      heartbeat.unref?.();
+      this.clearHeartbeat(client.id);
+      this.heartbeats.set(client.id, heartbeat);
 
-    client.on('disconnect', () => this.clearHeartbeat(client.id));
+      client.on('pong', () => {
+        this.logger.debug(`Pong from ${client.id}`);
+      });
+
+      client.on('disconnect', () => this.clearHeartbeat(client.id));
+    }
   }
 
   handleDisconnect(client: AuthenticatedSocket): void {

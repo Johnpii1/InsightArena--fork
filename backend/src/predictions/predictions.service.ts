@@ -117,7 +117,10 @@ export class PredictionsService {
             : {}),
         })
         .where('id = :id', { id: market.id })
-        .setParameter('stakeAmount', BigInt(dto.stake_amount_stroops).toString())
+        .setParameter(
+          'stakeAmount',
+          BigInt(dto.stake_amount_stroops).toString(),
+        )
         .execute();
 
       await manager
@@ -133,7 +136,10 @@ export class PredictionsService {
             : {}),
         })
         .where('id = :id', { id: user.id })
-        .setParameter('stakeAmount', BigInt(dto.stake_amount_stroops).toString())
+        .setParameter(
+          'stakeAmount',
+          BigInt(dto.stake_amount_stroops).toString(),
+        )
         .execute();
 
       this.logger.log(
@@ -165,10 +171,11 @@ export class PredictionsService {
     if (dto.status) {
       switch (dto.status) {
         case PredictionStatus.Active:
-          qb.andWhere('market.is_resolved = :isResolved', { isResolved: false })
-            .andWhere('market.is_cancelled = :isCancelled', {
-              isCancelled: false,
-            });
+          qb.andWhere('market.is_resolved = :isResolved', {
+            isResolved: false,
+          }).andWhere('market.is_cancelled = :isCancelled', {
+            isCancelled: false,
+          });
           break;
         case PredictionStatus.Won:
           qb.andWhere('market.is_resolved = :isResolved', { isResolved: true })
