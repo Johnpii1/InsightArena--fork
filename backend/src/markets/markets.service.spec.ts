@@ -428,6 +428,7 @@ describe('MarketsService.findFeaturedMarkets', () => {
         { provide: SorobanService, useValue: {} },
         { provide: DataSource, useValue: {} },
         { provide: WebhookDispatcherService, useValue: { emit: jest.fn() } },
+        { provide: CACHE_MANAGER, useValue: cacheMock },
       ],
     }).compile();
 
@@ -588,6 +589,10 @@ describe('MarketsService.update', () => {
         {
           provide: WebhookDispatcherService,
           useValue: { emit: jest.fn() },
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() },
         },
       ],
     }).compile();
