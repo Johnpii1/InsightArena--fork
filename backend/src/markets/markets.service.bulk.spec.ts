@@ -73,6 +73,7 @@ describe('MarketsService - Bulk Creation', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        MarketsService,
         {
           provide: getRepositoryToken(Market),
           useValue: marketsRepository,

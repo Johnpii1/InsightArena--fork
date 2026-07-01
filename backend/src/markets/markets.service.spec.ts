@@ -752,6 +752,10 @@ describe('MarketsService.getPredictionStats', () => {
           provide: WebhookDispatcherService,
           useValue: { emit: jest.fn() },
         },
+        {
+          provide: CACHE_MANAGER,
+          useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -878,6 +882,10 @@ describe('MarketsService.cancelMarket', () => {
         { provide: SorobanService, useValue: sorobanService },
         { provide: DataSource, useValue: {} },
         { provide: WebhookDispatcherService, useValue: { emit: jest.fn() } },
+        {
+          provide: CACHE_MANAGER,
+          useValue: { get: jest.fn(), set: jest.fn(), del: jest.fn() },
+        },
       ],
     }).compile();
 
