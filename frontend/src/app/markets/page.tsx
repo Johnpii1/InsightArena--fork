@@ -6,7 +6,6 @@ import Footer from "@/component/Footer";
 import PageBackground from "@/component/PageBackground";
 import MarketCard from "@/component/MarketCard";
 import { useWallet } from "@/context/WalletContext";
-import { env } from "@/lib/env";
 
 type Market = {
   id: string;
@@ -34,7 +33,8 @@ export default function MarketsPage() {
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch(`${env.API_URL}/api/v1/markets`);
+        const base = process.env.NEXT_PUBLIC_API_URL || "";
+        const res = await fetch(`${base}/api/v1/markets`);
         if (!res.ok) throw new Error("fetch failed");
         const data = await res.json();
         if (mounted) setMarkets(data || []);
