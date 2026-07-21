@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/component/Header";
 import Footer from "@/component/Footer";
 import PageBackground from "@/component/PageBackground";
 import MarketCard from "@/component/MarketCard";
 import { useWallet } from "@/context/WalletContext";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type Market = {
   id: string;
@@ -19,14 +21,51 @@ type Market = {
 
 const PAGE_SIZE = 8;
 
-export default function MarketsPage() {
+function MarketsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [category, setCategory] = useState(searchParams.get("category") || "All");
   const [status, setStatus] = useState("All");
   const [sort, setSort] = useState("newest");
   const [loading, setLoading] = useState(false);
+
+  const debouncedSearch = useDebounce(search, 300);
+  const initialUrlSynced = useRef(false);
+
+  const syncUrl = useCallback(
+    (debouncedVal: string, cat: string) => {
+      const params = new URLSearchParams();
+      if (debouncedVal.trim()) params.set("q", debouncedVal.trim());
+      if (cat !== "All") params.set("category", cat);
+      const qs = params.toString();
+      const currentQs = window.location.search;
+      const currentRaw = currentQs.startsWith("?") ? currentQs.slice(1) : currentQs;
+      if (qs !== currentRaw) {
+        router.replace(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+      }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    const cat = searchParams.get("category") || "All";
+    setSearch(q);
+    setCategory(cat);
+    initialUrlSynced.current = true;
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!initialUrlSynced.current) return;
+    syncUrl(debouncedSearch, category);
+  }, [debouncedSearch, category, syncUrl]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, category, status, sort]);
 
   useEffect(() => {
     let mounted = true;
@@ -87,8 +126,8 @@ export default function MarketsPage() {
 
   const filtered = useMemo(() => {
     let list = markets.slice();
-    if (search.trim()) {
-      const s = search.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const s = debouncedSearch.toLowerCase();
       list = list.filter((m) => m.title.toLowerCase().includes(s));
     }
     if (category !== "All") list = list.filter((m) => m.category === category);
@@ -99,7 +138,7 @@ export default function MarketsPage() {
     if (sort === "closing") list.sort((a, b) => +new Date(a.closeAt) - +new Date(b.closeAt));
 
     return list;
-  }, [markets, search, category, status, sort]);
+  }, [markets, debouncedSearch, category, status, sort]);
 
   const paged = filtered.slice(0, page * PAGE_SIZE);
 
@@ -113,6 +152,16 @@ export default function MarketsPage() {
     // navigate to market detail / prediction flow
     window.location.href = `/markets/${market.id}`;
   }
+
+  function clearFilters() {
+    setSearch("");
+    setCategory("All");
+    setStatus("All");
+    setSort("newest");
+    setPage(1);
+  }
+
+  const hasActiveFilters = search.trim() !== "" || category !== "All" || status !== "All" || sort !== "newest";
 
   return (
     <PageBackground>
@@ -177,7 +226,21 @@ export default function MarketsPage() {
           {loading && <div className="py-12 text-center text-gray-400">Loading markets...</div>}
 
           {!loading && paged.length === 0 && (
-            <div className="rounded-md border border-white/6 bg-white/3 p-8 text-center text-gray-300">No markets found.</div>
+            <div className="rounded-md border border-white/6 bg-white/3 p-8 text-center text-gray-300">
+              {hasActiveFilters ? (
+                <>
+                  <p className="mb-3">No markets match your filters.</p>
+                  <button
+                    className="rounded-md bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
+                    onClick={clearFilters}
+                  >
+                    Clear filters
+                  </button>
+                </>
+              ) : (
+                "No markets found."
+              )}
+            </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -201,5 +264,13 @@ export default function MarketsPage() {
 
       <Footer />
     </PageBackground>
+  );
+}
+
+export default function MarketsPage() {
+  return (
+    <Suspense fallback={null}>
+      <MarketsContent />
+    </Suspense>
   );
 }
