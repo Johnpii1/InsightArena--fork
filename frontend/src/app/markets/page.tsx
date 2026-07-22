@@ -2,7 +2,6 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Header from "@/component/Header";
 import Footer from "@/component/Footer";
 import PageBackground from "@/component/PageBackground";
