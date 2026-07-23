@@ -1103,6 +1103,104 @@ fn extend_market_end_time_fails_when_closed() {
     assert!(matches!(result, Err(Ok(InsightArenaError::MarketAlreadyClosed))));
 }
 
+// ── extend_market_end_time validation gaps (#1264) ──────────────────────────
+
+/// Requirement 3: "extending" to a timestamp strictly earlier than the current
+/// end time is rejected (the boundary case `new == current` is covered by
+/// `extend_market_end_time_fails_new_end_time_not_strictly_later`).
+#[test]
+fn extend_market_end_time_fails_earlier_than_current_end_time() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, _admin, _oracle, _) = deploy_with_token(&env);
+    let creator = Address::generate(&env);
+
+    let params = default_params(&env);
+    let id = client.create_market(&creator, &params);
+
+    let result = client.try_extend_market_end_time(&creator, &id, &(params.end_time - 1));
+    assert!(matches!(result, Err(Ok(InsightArenaError::InvalidTimeRange))));
+
+    // The stored end_time is untouched.
+    assert_eq!(client.get_market(&id).end_time, params.end_time);
+}
+
+/// Requirement 4: extending to a timestamp in the past (before the current
+/// ledger time) is rejected. A past timestamp is always <= the market's
+/// end_time here because extension already requires `now < end_time`, so it
+/// falls into the same InvalidTimeRange guard — this pins that a past deadline
+/// can never be stored.
+#[test]
+fn extend_market_end_time_fails_past_timestamp() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, _admin, _oracle, _) = deploy_with_token(&env);
+    let creator = Address::generate(&env);
+
+    let params = default_params(&env);
+    let id = client.create_market(&creator, &params);
+
+    // Move mid-window: the market is still open, but `now - 100` is history.
+    let mid_window = params.end_time - 500;
+    env.ledger().set_timestamp(mid_window);
+
+    let result = client.try_extend_market_end_time(&creator, &id, &(mid_window - 100));
+    assert!(matches!(result, Err(Ok(InsightArenaError::InvalidTimeRange))));
+    assert_eq!(client.get_market(&id).end_time, params.end_time);
+}
+
+/// Authorization is creator-only: even the platform admin is rejected, not
+/// just arbitrary addresses.
+#[test]
+fn extend_market_end_time_fails_for_admin() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, admin, _oracle, _) = deploy_with_token(&env);
+    let creator = Address::generate(&env);
+
+    let params = default_params(&env);
+    let id = client.create_market(&creator, &params);
+
+    let result = client.try_extend_market_end_time(&admin, &id, &(params.end_time + 500));
+    assert!(matches!(result, Err(Ok(InsightArenaError::Unauthorized))));
+}
+
+/// Requirement 7 / acceptance: the extended window is actually honored by
+/// submit_prediction. A prediction placed after the original deadline but
+/// before the new one succeeds, and the new deadline is then enforced.
+#[test]
+fn extend_market_end_time_extended_window_honored_by_submit_prediction() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, _admin, _oracle, xlm_token) = deploy_with_token(&env);
+    let creator = Address::generate(&env);
+
+    let params = default_params(&env);
+    let original_end = params.end_time;
+    let id = client.create_market(&creator, &params);
+
+    let predictor = Address::generate(&env);
+    let late_predictor = Address::generate(&env);
+    let stake = 20_000_000_i128;
+    let asset = StellarAssetClient::new(&env, &xlm_token);
+    asset.mint(&predictor, &stake);
+    asset.mint(&late_predictor, &stake);
+
+    // Extend before the original deadline passes.
+    let new_end = original_end + 2000;
+    client.extend_market_end_time(&creator, &id, &new_end);
+
+    // Inside the extension window: after the original deadline, before the new one.
+    env.ledger().set_timestamp(original_end + 100);
+    client.submit_prediction(&predictor, &id, &symbol_short!("yes"), &stake);
+    assert!(client.has_predicted(&id, &predictor));
+
+    // The new deadline is enforced just like the original one was.
+    env.ledger().set_timestamp(new_end);
+    let result = client.try_submit_prediction(&late_predictor, &id, &symbol_short!("no"), &stake);
+    assert!(matches!(result, Err(Ok(InsightArenaError::MarketExpired))));
+}
+
 // ============================================================================
 // Pagination boundary cases — issue #1250
 // ============================================================================
