@@ -19,6 +19,10 @@ import {
   PaginatedLeaderboardHistoryResponse,
 } from './dto/leaderboard-history.dto';
 import { UserRankDto } from './dto/user-rank.dto';
+import {
+  RankHistoryQueryDto,
+  RankHistoryResponse,
+} from './dto/rank-history.dto';
 import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Leaderboard')
@@ -85,6 +89,31 @@ export class LeaderboardController {
       );
     }
     return this.leaderboardService.getHistory(query);
+  }
+
+  @Get(':address/rank-history')
+  @Public()
+  @ApiOperation({
+    summary:
+      "Get a user's rank/score history over time from periodic snapshots",
+  })
+  @ApiQuery({ name: 'season_id', required: false, type: String })
+  @ApiQuery({ name: 'from', required: false, type: String })
+  @ApiQuery({ name: 'to', required: false, type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Rank history points with signed rank_delta vs. prior point',
+    type: RankHistoryResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async getRankHistory(
+    @Param('address') address: string,
+    @Query() query: RankHistoryQueryDto,
+  ): Promise<RankHistoryResponse> {
+    return this.leaderboardService.getRankHistory(address, query);
   }
 
   @Get(':address')
