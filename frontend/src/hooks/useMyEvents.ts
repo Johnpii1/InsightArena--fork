@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useCreatorEvents } from "@/context/CreatorEventsContext";
 import type { CreatorEvent, Prediction } from "@/context/CreatorEventsContext";
+import { logHookError } from "./useHookErrorMessage";
 
 export interface UseMyEventsReturn {
   myJoinedEvents: CreatorEvent[];
@@ -44,8 +45,14 @@ export function useMyPredictions(eventId: string): UseMyPredictionsReturn {
     try {
       const result = await getUserPredictions(eventId);
       setPredictions(result);
-    } catch {
-      setError("Failed to load predictions.");
+    } catch (err) {
+      setError(
+        logHookError(err, {
+          fallbackMessage: "Failed to load predictions.",
+          hookName: "useMyPredictions",
+          id: eventId,
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
