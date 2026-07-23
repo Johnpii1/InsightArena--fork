@@ -71,6 +71,12 @@ class EnvironmentVariables {
 
   @IsNumber()
   EXPORT_TTL_HOURS: number = 48;
+
+  @IsString()
+  LEADERBOARD_SNAPSHOT_CRON: string = '0 * * * *';
+
+  @IsNumber()
+  LEADERBOARD_SNAPSHOT_RETENTION_DAYS: number = 30;
 }
 
 export function validate(config: Record<string, unknown>) {
